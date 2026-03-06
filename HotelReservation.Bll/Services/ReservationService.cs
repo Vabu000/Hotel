@@ -1,10 +1,12 @@
 ﻿using AutoMapper;
 using Microsoft.Extensions.Logging;
 using HotelReservation.Bll.DTOs;
+using HotelReservation.Bll.Events;
 using HotelReservation.Bll.Services;
 using HotelReservation.Dal.Interfaces;
 using HotelReservation.Domain.Entities;
 using HotelReservation.Domain.Exceptions;
+using HotelPlatform.ServiceDefaults.Events;
 
 namespace HotelReservation.Bll.Services
 {
@@ -13,12 +15,18 @@ namespace HotelReservation.Bll.Services
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
         private readonly ILogger<ReservationService> _logger;
+        private readonly IEventPublisher _eventPublisher;
 
-        public ReservationService(IUnitOfWork unitOfWork, IMapper mapper, ILogger<ReservationService> logger)
+        public ReservationService(
+            IUnitOfWork unitOfWork,
+            IMapper mapper,
+            ILogger<ReservationService> logger,
+            IEventPublisher eventPublisher)
         {
             _unitOfWork = unitOfWork;
             _mapper = mapper;
             _logger = logger;
+            _eventPublisher = eventPublisher;
         }
 
         public async Task<ReservationDto?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
@@ -96,6 +104,20 @@ namespace HotelReservation.Bll.Services
                 _logger.LogInformation("Reservation created with ID: {ReservationId}", reservationId);
 
                 var createdReservation = await _unitOfWork.Reservations.GetWithDetailsAsync(reservationId, cancellationToken);
+
+                // ✅ Publish ReservationMadeEvent to RabbitMQ
+                var totalPrice = CalculateTotalPrice(100m, reservation.CheckInDate, reservation.CheckOutDate); // Default price
+                var reservationEvent = new ReservationMadeEvent(
+                    reservationId: reservationId,
+                    clientId: reservation.ClientId,
+                    roomId: reservation.RoomId,
+                    checkInDate: reservation.CheckInDate,
+                    checkOutDate: reservation.CheckOutDate,
+                    totalPrice: totalPrice,
+                    status: reservation.Status.ToString());
+
+                await _eventPublisher.PublishAsync(reservationEvent, cancellationToken);
+
                 return _mapper.Map<ReservationDto>(createdReservation);
             }
             catch
@@ -250,6 +272,12 @@ namespace HotelReservation.Bll.Services
             {
                 throw new BusinessConflictException($"Cannot change status from {currentStatus} to {newStatus}");
             }
+        }
+
+        private static decimal CalculateTotalPrice(decimal pricePerNight, DateTime checkIn, DateTime checkOut)
+        {
+            var nights = (checkOut - checkIn).Days;
+            return pricePerNight * nights;
         }
     }
 }

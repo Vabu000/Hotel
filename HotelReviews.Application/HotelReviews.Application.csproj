@@ -7,6 +7,7 @@
 
 	<ItemGroup>
 		<ProjectReference Include="..\HotelReviews.Domain\HotelReviews.Domain.csproj" />
+		<ProjectReference Include="..\HotelPlatform.ServiceDefaults\HotelPlatform.ServiceDefaults.csproj" />
 	</ItemGroup>
 
 	<ItemGroup>

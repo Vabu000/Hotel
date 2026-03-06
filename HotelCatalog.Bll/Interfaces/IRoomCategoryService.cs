@@ -14,5 +14,6 @@ namespace HotelCatalog.Bll.Interfaces
         Task<bool> DeleteAsync(int id, CancellationToken cancellationToken = default);
         Task<bool> AssignServiceToCategoryAsync(AssignServiceToCategoryDto dto, CancellationToken cancellationToken = default);
         Task<bool> RemoveServiceFromCategoryAsync(int categoryId, int serviceId, CancellationToken cancellationToken = default);
+        Task<PagedResult<RoomCategoryDto>> GetPagedWithSpecificationAsync(RoomCategoryQueryParameters parameters, CancellationToken cancellationToken = default);
     }
 }

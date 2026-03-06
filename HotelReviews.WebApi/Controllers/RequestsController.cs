@@ -6,6 +6,7 @@ using HotelReviews.Application.Requests.Queries.GetPendingRequests;
 using HotelReviews.Application.Requests.Queries.GetRequestById;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using MongoDB.Bson;
 
 namespace HotelReviews.WebApi.Controllers;
 [ApiController]
@@ -24,11 +25,17 @@ public class RequestsController : ControllerBase
     [HttpGet("{id}")]
     [ProducesResponseType(typeof(RequestDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<RequestDto>> GetById(
         string id,
         CancellationToken cancellationToken)
     {
         _logger.LogInformation("Запит на отримання запиту з ID: {RequestId}", id);
+
+        if (!ObjectId.TryParse(id, out _))
+        {
+            return BadRequest(new { Message = $"Невалідний ID '{id}'. ID повинен бути 24-символьним hex рядком (наприклад, '507f1f77bcf86cd799439011')" });
+        }
 
         var query = new GetRequestByIdQuery(id);
         var result = await _mediator.Send(query, cancellationToken);
@@ -81,6 +88,11 @@ public class RequestsController : ControllerBase
         [FromBody] UpdateRequestStatusCommand command,
         CancellationToken cancellationToken)
     {
+        if (!ObjectId.TryParse(id, out _))
+        {
+            return BadRequest(new { Message = $"Невалідний ID '{id}'. ID повинен бути 24-символьним hex рядком" });
+        }
+
         if (id != command.Id)
         {
             return BadRequest(new { Message = "ID у URL не співпадає з ID у команді" });

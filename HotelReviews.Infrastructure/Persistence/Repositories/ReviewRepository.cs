@@ -132,7 +132,6 @@ public class ReviewRepository : IReviewRepository
         bool? isApproved = null,
         CancellationToken cancellationToken = default)
     {
-        // Побудова фільтру
         var filterBuilder = Builders<Review>.Filter;
         var filter = filterBuilder.Empty;
 
@@ -151,10 +150,8 @@ public class ReviewRepository : IReviewRepository
         if (isApproved.HasValue)
             filter &= filterBuilder.Eq(r => r.IsApproved, isApproved.Value);
 
-        // Загальна кількість
         var totalCount = await _collection.CountDocumentsAsync(filter, cancellationToken: cancellationToken);
 
-        // Отримання даних з пагінацією
         var items = await _collection
             .Find(filter)
             .SortByDescending(r => r.Date)

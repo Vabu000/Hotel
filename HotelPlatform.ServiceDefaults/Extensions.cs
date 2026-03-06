@@ -6,12 +6,15 @@ using Microsoft.Extensions.Hosting;
 using HotelPlatform.ServiceDefaults;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Configuration;
 using OpenTelemetry;
 using OpenTelemetry.Logs;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Trace;
 using Serilog;
 using Serilog.Formatting.Compact;
+using HotelPlatform.ServiceDefaults.Events;
+using MassTransit;
 
 namespace Microsoft.Extensions.Hosting;
 
@@ -33,9 +36,12 @@ public static class Extensions
 
         builder.Services.ConfigureHttpClientDefaults(http =>
         {
-            http.AddHttpMessageHandler<CorrelationIdDelegatingHandler>();
-
-            http.AddStandardResilienceHandler();
+            http.AddStandardResilienceHandler(options =>
+            {
+                options.TotalRequestTimeout.Timeout = TimeSpan.FromSeconds(60);  
+                options.AttemptTimeout.Timeout = TimeSpan.FromSeconds(30);       
+                options.CircuitBreaker.SamplingDuration = TimeSpan.FromSeconds(60); 
+            });
 
             http.AddServiceDiscovery();
         });
@@ -61,8 +67,8 @@ public static class Extensions
             .WithTracing(tracing =>
             {
                 tracing.AddAspNetCoreInstrumentation()
-                    .AddHttpClientInstrumentation();
-                    //.AddSqlClientInstrumentation();
+                    .AddHttpClientInstrumentation()
+                    .AddGrpcClientInstrumentation();
             });
 
         builder.AddOpenTelemetryExporters();
@@ -96,7 +102,7 @@ public static class Extensions
             .Enrich.FromLogContext()
             .Enrich.WithProperty("Application", builder.Environment.ApplicationName)
             .Enrich.WithProperty("Environment", builder.Environment.EnvironmentName)
-            .Enrich.WithProperty("MachineName", System.Environment.MachineName)  
+            .Enrich.WithProperty("MachineName", System.Environment.MachineName)
             .Enrich.WithThreadId()
             .WriteTo.Console(new CompactJsonFormatter())
             .CreateLogger();
@@ -123,6 +129,7 @@ public static class Extensions
 
         return app;
     }
+
     public static WebApplication UseServiceDefaults(this WebApplication app)
     {
         app.UseMiddleware<CorrelationIdMiddleware>();
@@ -130,5 +137,40 @@ public static class Extensions
         app.MapDefaultEndpoints();
 
         return app;
+    }
+
+    /// <summary>
+    /// Adds MassTransit with RabbitMQ for event publishing
+    /// </summary>
+    public static IServiceCollection AddEventPublisher(this IServiceCollection services, IHostApplicationBuilder builder)
+    {
+        services.AddMassTransit(x =>
+        {
+            x.UsingRabbitMq((context, cfg) =>
+            {
+                var connectionName = builder.Configuration.GetConnectionString("rabbitmq");
+
+                if (!string.IsNullOrEmpty(connectionName))
+                {
+                    cfg.Host(connectionName);
+                }
+                else
+                {
+                    cfg.Host("localhost", "/", h =>
+                    {
+                        h.Username("guest");
+                        h.Password("guest");
+                    });
+                }
+
+                cfg.UseMessageRetry(r => r.Incremental(3, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(2)));
+
+                cfg.ConfigureEndpoints(context);
+            });
+        });
+
+        services.AddScoped<IEventPublisher, RabbitMQEventPublisher>();
+
+        return services;
     }
 }

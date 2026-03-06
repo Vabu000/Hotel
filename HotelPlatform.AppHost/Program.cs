@@ -1,8 +1,10 @@
-﻿var builder = DistributedApplication.CreateBuilder(args);
+﻿Environment.SetEnvironmentVariable("ASPIRE_ALLOW_UNSECURED_TRANSPORT", "true");
+var builder = DistributedApplication.CreateBuilder(args);
 
-var mongodb = builder.AddMongoDB("mongodb")
-    .WithDataVolume("mongodb-data")
-    .WithMongoExpress();
+// MongoDB не використовується - Reviews Service підключається до standalone MongoDB
+// var mongodb = builder.AddMongoDB("mongodb")
+//     .WithDataVolume("mongodb-data")
+//     .WithMongoExpress();
 
 var postgres = builder.AddPostgres("postgres")
     .WithDataVolume("postgres-data")
@@ -12,36 +14,35 @@ var redis = builder.AddRedis("redis")
     .WithDataVolume("redis-data")
     .WithRedisCommander();
 
-var mongoDatabase = mongodb.AddDatabase("hotel-reviews-dev");
+var rabbitmq = builder.AddRabbitMQ("rabbitmq")
+    .WithDataVolume("rabbitmq-data")
+    .WithManagementPlugin();
+
+// var mongoDatabase = mongodb.AddDatabase("hotel-reviews-dev");
 var reservationDb = postgres.AddDatabase("HotelReservationDb");
 var catalogDb = postgres.AddDatabase("HotelCatalogDb");
 
-var reviewsService = builder.AddProject("reviews-service",
-    "../HotelReviews.WebApi/HotelReviews.WebApi.csproj")
-    .WithReference(mongodb)
-    .WithReference(redis)  
-    .WithEnvironment("MongoDbSettings__ConnectionString", mongodb.Resource.ConnectionStringExpression)
-    .WithEnvironment("MongoDbSettings__DatabaseName", "hotel-reviews-dev");
+var reviewsService = builder.AddProject<Projects.HotelReviews_WebApi>("reviews-service")
+    .WithReference(redis)
+    .WithReference(rabbitmq);
 
-var reservationService = builder.AddProject("reservation-service",
-    "../HotelReservationSystem/HotelReservation.Api.csproj")
+var reservationService = builder.AddProject<Projects.HotelReservation_Api>("reservation-service")
     .WithReference(reservationDb)
-    .WithReference(redis);  
+    .WithReference(redis)
+    .WithReference(rabbitmq);
 
-var catalogService = builder.AddProject("catalog-service",
-    "../HotelCatalog.Api/HotelCatalog.Api.csproj")
+var catalogService = builder.AddProject<Projects.HotelCatalog_Api>("catalog-service")
     .WithReference(catalogDb)
-    .WithReference(redis);  
+    .WithReference(redis)
+    .WithReference(rabbitmq);
 
-var aggregator = builder.AddProject("aggregator",
-    "../HotelPlatform.Aggregator/HotelPlatform.Aggregator.csproj")
+var aggregator = builder.AddProject<Projects.HotelPlatform_Aggregator>("aggregator")
     .WithReference(reviewsService)
     .WithReference(reservationService)
     .WithReference(catalogService)
-    .WithReference(redis);  
+    .WithReference(redis);
 
-var gateway = builder.AddProject("gateway",
-    "../HotelPlatform.ApiGateway/HotelPlatform.ApiGateway.csproj")
+var gateway = builder.AddProject<Projects.HotelPlatform_ApiGateway>("gateway")
     .WithExternalHttpEndpoints()
     .WithReference(reviewsService)
     .WithReference(reservationService)

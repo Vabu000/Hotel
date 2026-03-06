@@ -8,6 +8,7 @@ using HotelReviews.Application.Reviews.Queries.GetReviewById;
 using HotelReviews.Application.Reviews.Queries.GetReviewsByRoom;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using MongoDB.Bson;
 
 namespace HotelReviews.WebApi.Controllers;
 [ApiController]
@@ -45,11 +46,17 @@ public class ReviewsController : ControllerBase
     [HttpGet("{id}")]
     [ProducesResponseType(typeof(ReviewDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<ReviewDto>> GetById(
         string id,
         CancellationToken cancellationToken)
     {
         _logger.LogInformation("Запит на отримання відгуку з ID: {ReviewId}", id);
+
+        if (!ObjectId.TryParse(id, out _))
+        {
+            return BadRequest(new { Message = $"Невалідний ID '{id}'. ID повинен бути 24-символьним hex рядком (наприклад, '507f1f77bcf86cd799439011')" });
+        }
 
         var query = new GetReviewByIdQuery(id);
         var result = await _mediator.Send(query, cancellationToken);
@@ -105,6 +112,11 @@ public class ReviewsController : ControllerBase
         [FromBody] UpdateReviewCommand command,
         CancellationToken cancellationToken)
     {
+        if (!ObjectId.TryParse(id, out _))
+        {
+            return BadRequest(new { Message = $"Невалідний ID '{id}'. ID повинен бути 24-символьним hex рядком" });
+        }
+
         if (id != command.Id)
         {
             return BadRequest(new { Message = "ID у URL не співпадає з ID у тілі запиту" });
@@ -119,11 +131,17 @@ public class ReviewsController : ControllerBase
     [HttpDelete("{id}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Delete(
         string id,
         CancellationToken cancellationToken)
     {
         _logger.LogInformation("Видалення відгуку {ReviewId}", id);
+
+        if (!ObjectId.TryParse(id, out _))
+        {
+            return BadRequest(new { Message = $"Невалідний ID '{id}'. ID повинен бути 24-символьним hex рядком" });
+        }
 
         var command = new DeleteReviewCommand(id);
         await _mediator.Send(command, cancellationToken);
@@ -134,11 +152,17 @@ public class ReviewsController : ControllerBase
     [ProducesResponseType(typeof(ReviewDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<ReviewDto>> Approve(
         string id,
         CancellationToken cancellationToken)
     {
         _logger.LogInformation("Схвалення відгуку {ReviewId}", id);
+
+        if (!ObjectId.TryParse(id, out _))
+        {
+            return BadRequest(new { Message = $"Невалідний ID '{id}'. ID повинен бути 24-символьним hex рядком" });
+        }
 
         var command = new ApproveReviewCommand(id);
         var result = await _mediator.Send(command, cancellationToken);

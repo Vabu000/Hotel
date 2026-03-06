@@ -11,10 +11,19 @@ using System.Reflection;
 using HotelReviews.WebApi.Services;
 using HotelReviews.Application.Common.Interfaces;
 using HotelReviews.Infrastructure.Configuration;
+AppContext.SetSwitch("System.Net.Http.SocketsHttpHandler.Http2UnencryptedSupport", true);
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.AddServiceDefaults();
+
+builder.WebHost.ConfigureKestrel(options =>
+{
+    options.ConfigureEndpointDefaults(listenOptions =>
+    {
+        listenOptions.Protocols = Microsoft.AspNetCore.Server.Kestrel.Core.HttpProtocols.Http1AndHttp2;
+    });
+});
 
 builder.Services.AddMemoryCache(options =>
 {
@@ -28,7 +37,10 @@ builder.Services.AddSingleton<ICacheService, CacheService>();
 builder.Services.AddSingleton<IDistributedCacheService, DistributedCacheService>();
 builder.Services.AddSingleton<ITwoLevelCacheService, TwoLevelCacheService>();
 
+builder.Services.AddEventPublisher(builder);
+
 builder.Services.AddGrpc();
+builder.Services.AddGrpcHealthChecks();
 
 builder.Services.Configure<MongoDbSettings>(
     builder.Configuration.GetSection("MongoDbSettings"));
@@ -120,11 +132,12 @@ if (app.Environment.IsDevelopment())
     });
 }
 
-app.UseHttpsRedirection();
+//app.UseHttpsRedirection();
 app.UseCors("AllowAll");
 app.UseSerilogRequestLogging();
 app.UseAuthorization();
 app.MapGrpcService<GrpcReviewsService>();
+app.MapGrpcHealthChecksService();
 app.MapControllers();
 
 

@@ -206,10 +206,10 @@ namespace HotelCatalog.Api.Controllers
             {
                 var result = await _serviceService.GetPagedWithSpecificationAsync(parameters, cancellationToken);
 
-                Response.Headers.Add("X-Total-Count", result.TotalCount.ToString());
-                Response.Headers.Add("X-Page", result.Page.ToString());
-                Response.Headers.Add("X-Page-Size", result.PageSize.ToString());
-                Response.Headers.Add("X-Total-Pages", result.TotalPages.ToString());
+                Response.Headers.Append("X-Total-Count", result.TotalCount.ToString());
+                Response.Headers.Append("X-Page", result.Page.ToString());
+                Response.Headers.Append("X-Page-Size", result.PageSize.ToString());
+                Response.Headers.Append("X-Total-Pages", result.TotalPages.ToString());
 
                 return Ok(result);
             }

@@ -1,15 +1,14 @@
 ﻿syntax = "proto3";
-
 option csharp_namespace = "HotelCatalog.Api.Grpc";
-
 package catalog;
 
 service CatalogService {
   rpc GetAllServices (GetAllServicesRequest) returns (GetAllServicesResponse);
-  
   rpc GetServiceById (GetServiceByIdRequest) returns (ServiceResponse);
-  
   rpc CreateService (CreateServiceRequest) returns (ServiceResponse);
+  
+  rpc GetRoomCategoryByRoomId (GetRoomCategoryByRoomIdRequest) returns (RoomCategoryResponse);
+  rpc GetServicesByRoomCategory (GetServicesByRoomCategoryRequest) returns (GetAllServicesResponse);
 }
 
 message GetAllServicesRequest {
@@ -41,4 +40,23 @@ message ServiceMessage {
   string name = 2;
   string description = 3;
   double price = 4;
+}
+
+message GetRoomCategoryByRoomIdRequest {
+  int32 room_id = 1;
+}
+
+message GetServicesByRoomCategoryRequest {
+  int32 category_id = 1;
+}
+
+message RoomCategoryResponse {
+  RoomCategoryMessage category = 1;
+}
+
+message RoomCategoryMessage {
+  int32 category_id = 1;
+  string name = 2;
+  string description = 3;
+  repeated ServiceMessage services = 4;
 }

@@ -239,5 +239,29 @@ namespace HotelCatalog.Api.Controllers
                 return StatusCode(StatusCodes.Status500InternalServerError, "Internal server error");
             }
         }
+
+        [HttpGet("paged")]
+        [ProducesResponseType(typeof(PagedResult<RoomCategoryDto>), StatusCodes.Status200OK)]
+        public async Task<ActionResult<PagedResult<RoomCategoryDto>>> GetPagedCategories(
+            [FromQuery] RoomCategoryQueryParameters parameters,
+            CancellationToken cancellationToken)
+        {
+            try
+            {
+                var result = await _roomCategoryService.GetPagedWithSpecificationAsync(parameters, cancellationToken);
+
+                Response.Headers.Append("X-Total-Count", result.TotalCount.ToString());
+                Response.Headers.Append("X-Page", result.Page.ToString());
+                Response.Headers.Append("X-Page-Size", result.PageSize.ToString());
+                Response.Headers.Append("X-Total-Pages", result.TotalPages.ToString());
+
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting paged room categories");
+                return StatusCode(StatusCodes.Status500InternalServerError, "Internal server error");
+            }
+        }
     }
 }

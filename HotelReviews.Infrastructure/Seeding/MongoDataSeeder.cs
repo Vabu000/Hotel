@@ -28,7 +28,6 @@ public class MongoDataSeeder : IDataSeeder
     {
         var collection = _context.Reviews;
 
-        // Перевірка чи вже є дані
         var existingCount = await collection.CountDocumentsAsync(_ => true, cancellationToken: cancellationToken);
         if (existingCount > 0)
         {
@@ -70,7 +69,6 @@ public class MongoDataSeeder : IDataSeeder
     {
         var collection = _context.Requests;
 
-        // Перевірка чи вже є дані
         var existingCount = await collection.CountDocumentsAsync(_ => true, cancellationToken: cancellationToken);
         if (existingCount > 0)
         {

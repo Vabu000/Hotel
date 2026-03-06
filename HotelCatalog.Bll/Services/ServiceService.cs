@@ -104,7 +104,8 @@ namespace HotelCatalog.Bll.Services
         }
         public async Task<PagedResult<ServiceDto>> GetPagedAsync(ServiceQueryParameters parameters, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            // This is the old implementation without specifications
+            // Use GetPagedWithSpecificationAsync instead for better performance
             var query = _unitOfWork.Services.FindAsync(s => true, cancellationToken);
             var allServices = (await query).AsQueryable();
 

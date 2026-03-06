@@ -1,0 +1,63 @@
+﻿syntax = "proto3";
+
+option csharp_namespace = "HotelReviews.WebApi.Services";
+
+package reviews;
+
+service ReviewsService {
+  rpc GetReviewsByRoom (GetReviewsByRoomRequest) returns (GetReviewsByRoomResponse);
+  
+  rpc GetReviewById (GetReviewByIdRequest) returns (ReviewResponse);
+  
+  rpc CreateReview (CreateReviewRequest) returns (ReviewResponse);
+}
+
+message GetReviewsByRoomRequest {
+  int32 room_id = 1;
+  int32 page = 2;
+  int32 page_size = 3;
+  optional int32 min_rating = 4;
+  optional bool is_verified = 5;
+  optional bool is_approved = 6;
+}
+
+message GetReviewByIdRequest {
+  string id = 1;
+}
+
+message CreateReviewRequest {
+  int32 room_id = 1;
+  int32 client_id = 2;
+  int32 rating = 3;
+  string comment = 4;
+  string stay_date_from = 5; 
+  string stay_date_to = 6;    
+}
+
+message GetReviewsByRoomResponse {
+  repeated ReviewMessage items = 1;
+  int32 page = 2;
+  int32 page_size = 3;
+  int64 total_count = 4;
+  int32 total_pages = 5;
+  bool has_previous_page = 6;
+  bool has_next_page = 7;
+}
+
+message ReviewResponse {
+  ReviewMessage review = 1;
+}
+
+message ReviewMessage {
+  string id = 1;
+  int32 client_id = 2;
+  int32 room_id = 3;
+  int32 rating = 4;
+  string comment = 5;
+  string date = 6;             
+  bool is_verified = 7;
+  bool is_approved = 8;
+  string rejection_reason = 9;
+  string created_at = 10;      
+  string updated_at = 11;      
+}

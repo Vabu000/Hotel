@@ -14,9 +14,11 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<PackageReference Include="Aspire.RabbitMQ.Client" Version="13.0.1" />
 		<PackageReference Include="Aspire.StackExchange.Redis" Version="9.5.2" />
 		<PackageReference Include="Google.Protobuf" Version="3.33.0" />
 		<PackageReference Include="Grpc.AspNetCore" Version="2.71.0" />
+		<PackageReference Include="Grpc.AspNetCore.HealthChecks" Version="2.71.0" />
 		<PackageReference Include="Grpc.Tools" Version="2.76.0">
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 			<PrivateAssets>all</PrivateAssets>
@@ -26,6 +28,7 @@
 			<PrivateAssets>all</PrivateAssets>
 		</PackageReference>
 		<PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="9.0.10" />
+		<PackageReference Include="RabbitMQ.Client" Version="7.2.0" />
 		<PackageReference Include="Serilog.AspNetCore" Version="8.0.1" />
 		<PackageReference Include="Serilog.Enrichers.Environment" Version="3.0.1" />
 		<PackageReference Include="Serilog.Enrichers.Thread" Version="4.0.0" />

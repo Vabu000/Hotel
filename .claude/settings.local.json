@@ -1,0 +1,28 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dotnet build:*)",
+      "Bash(dotnet clean:*)",
+      "Bash(timeout /t 30 dotnet run)",
+      "Bash(dotnet run:*)",
+      "Bash(timeout /t 15)",
+      "Bash(ping:*)",
+      "Bash(nul)",
+      "Bash(docker logs:*)",
+      "Bash(docker stop:*)",
+      "Bash(docker ps:*)",
+      "Bash(docker system prune:*)",
+      "Bash(docker volume prune:*)",
+      "Bash(taskkill:*)",
+      "Bash(tasklist:*)",
+      "Bash(findstr:*)",
+      "Bash(curl:*)",
+      "Bash(dotnet add:*)",
+      "Bash(dotnet remove:*)",
+      "Bash(netstat:*)",
+      "Bash(powershell -Command:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

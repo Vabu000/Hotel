@@ -7,15 +7,38 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Aspire.StackExchange.Redis" Version="9.5.2" />
-		<PackageReference Include="Grpc.Net.Client" Version="2.71.0" />
-		<PackageReference Include="Grpc.Net.ClientFactory" Version="2.71.0" />
-		<PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="8.0.16" />
-		<PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
+		<PackageReference Include="Aspire.RabbitMQ.Client" Version="13.0.1" />
+		<PackageReference Include="Grpc.Net.Client" Version="2.70.0" />
+		<PackageReference Include="Grpc.Net.ClientFactory" Version="2.70.0" />
+		<PackageReference Include="Grpc.Tools" Version="2.68.1">
+			<PrivateAssets>all</PrivateAssets>
+			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+		</PackageReference>
+		<PackageReference Include="Grpc.HealthCheck" Version="2.70.0" />
+		<PackageReference Include="Google.Protobuf" Version="3.28.3" />
+		<PackageReference Include="MassTransit" Version="8.5.7" />
+		<PackageReference Include="MassTransit.RabbitMQ" Version="8.5.7" />
+
+		<PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="9.0.0" />
+
+		<PackageReference Include="Aspire.StackExchange.Redis" Version="8.2.0" />
+		<PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
+		<PackageReference Include="Aspire.Hosting.AppHost" Version="8.2.0" />
+
+		<!-- ✅ Health Checks -->
+		<PackageReference Include="AspNetCore.HealthChecks.Redis" Version="8.0.1" />
+		<PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks" Version="8.0.22" />
+
 	</ItemGroup>
 
 	<ItemGroup>
 		<ProjectReference Include="..\HotelPlatform.ServiceDefaults\HotelPlatform.ServiceDefaults.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<Protobuf Include="Protos\catalog.proto" GrpcServices="Client" />
+		<Protobuf Include="Protos\reservations.proto" GrpcServices="Client" />
+		<Protobuf Include="Protos\reviews.proto" GrpcServices="Client" />
 	</ItemGroup>
 
 </Project>

@@ -9,13 +9,16 @@ namespace HotelReservation.Api.Grpc;
 public class GrpcReservationsService : ReservationsService.ReservationsServiceBase
 {
     private readonly IReservationService _reservationService;
+    private readonly IRoomService _roomService;
     private readonly ILogger<GrpcReservationsService> _logger;
 
     public GrpcReservationsService(
         IReservationService reservationService,
+        IRoomService roomService,
         ILogger<GrpcReservationsService> logger)
     {
         _reservationService = reservationService;
+        _roomService = roomService;
         _logger = logger;
     }
 
@@ -55,6 +58,73 @@ public class GrpcReservationsService : ReservationsService.ReservationsServiceBa
         {
             Reservation = MapToGrpc(reservation)
         };
+    }
+
+    public override async Task<GetAllReservationsResponse> GetReservationsByRoom(
+        GetReservationsByRoomRequest request,
+        ServerCallContext context)
+    {
+        _logger.LogInformation("gRPC GetReservationsByRoom: RoomId={RoomId}, Page={Page}",
+            request.RoomId, request.Page);
+
+        var allReservations = await _reservationService.GetAllAsync(context.CancellationToken);
+
+        var roomReservations = allReservations
+            .Where(r => r.RoomId == request.RoomId)
+            .ToList();
+
+        var response = new GetAllReservationsResponse
+        {
+            TotalCount = roomReservations.Count
+        };
+
+        response.Items.AddRange(roomReservations.Select(MapToGrpc));
+
+        return response;
+    }
+
+    public override async Task<GetAllReservationsResponse> GetReservationsByClient(
+        GetReservationsByClientRequest request,
+        ServerCallContext context)
+    {
+        _logger.LogInformation("gRPC GetReservationsByClient: ClientId={ClientId}, Page={Page}",
+            request.ClientId, request.Page);
+
+        var allReservations = await _reservationService.GetAllAsync(context.CancellationToken);
+
+        var clientReservations = allReservations
+            .Where(r => r.ClientId == request.ClientId)
+            .ToList();
+
+        var response = new GetAllReservationsResponse
+        {
+            TotalCount = clientReservations.Count
+        };
+
+        response.Items.AddRange(clientReservations.Select(MapToGrpc));
+
+        return response;
+    }
+
+    public override Task<RoomResponse> GetRoomById(
+     GetRoomByIdRequest request,
+     ServerCallContext context)
+    {
+        _logger.LogInformation("✅ gRPC GetRoomById called: RoomId={RoomId}", request.RoomId);
+
+        var response = new RoomResponse
+        {
+            Room = new RoomMessage
+            {
+                RoomId = request.RoomId,
+                RoomNumber = $"Room-{request.RoomId}",
+                Capacity = 2,
+                Price = 150.0,
+                CategoryId = 1
+            }
+        };
+
+        return Task.FromResult(response);
     }
 
     public override async Task<GetAllReservationsResponse> GetReservationsByHotel(
@@ -116,7 +186,7 @@ public class GrpcReservationsService : ReservationsService.ReservationsServiceBa
         return new ReservationMessage
         {
             Id = dto.ReservationId,
-            HotelId = 0,  
+            HotelId = 0,
             ClientId = dto.ClientId,
             RoomId = dto.RoomId,
             CheckInDate = dto.CheckInDate.ToString("O"),
@@ -124,6 +194,18 @@ public class GrpcReservationsService : ReservationsService.ReservationsServiceBa
             TotalPrice = totalPrice,
             Status = dto.Status.ToString(),
             CreatedAt = DateTime.UtcNow.ToString("O")
+        };
+    }
+
+    private static RoomMessage MapRoomToGrpc(RoomDto dto)
+    {
+        return new RoomMessage
+        {
+            RoomId = dto.RoomId,
+            RoomNumber = dto.RoomNumber ?? string.Empty,
+            Capacity = dto.Capacity,
+            Price = (double)dto.Price,
+            CategoryId = 0 
         };
     }
 }

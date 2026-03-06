@@ -1,9 +1,12 @@
 ﻿using AutoMapper;
 using Microsoft.Extensions.Logging;
 using HotelCatalog.Bll.DTOs;
+using HotelCatalog.Bll.Events;
 using HotelCatalog.Bll.Interfaces;
 using HotelCatalog.Dal.Interfaces;
 using HotelCatalog.Domain.Entities;
+using HotelPlatform.ServiceDefaults.Events;
+using HotelCatalog.Dal.Specifications;
 
 namespace HotelCatalog.Bll.Services
 {
@@ -12,12 +15,18 @@ namespace HotelCatalog.Bll.Services
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
         private readonly ILogger<RoomCategoryService> _logger;
+        private readonly IEventPublisher _eventPublisher;
 
-        public RoomCategoryService(IUnitOfWork unitOfWork, IMapper mapper, ILogger<RoomCategoryService> logger)
+        public RoomCategoryService(
+            IUnitOfWork unitOfWork,
+            IMapper mapper,
+            ILogger<RoomCategoryService> logger,
+            IEventPublisher eventPublisher)
         {
             _unitOfWork = unitOfWork;
             _mapper = mapper;
             _logger = logger;
+            _eventPublisher = eventPublisher;
         }
 
         public async Task<RoomCategoryDto?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
@@ -66,6 +75,16 @@ namespace HotelCatalog.Bll.Services
             await _unitOfWork.SaveChangesAsync(cancellationToken);
 
             _logger.LogInformation("Room category created with ID: {CategoryId}", category.CategoryId);
+
+            // ✅ Publish RoomCategoryCreatedEvent to RabbitMQ
+            var categoryEvent = new RoomCategoryCreatedEvent(
+                roomCategoryId: category.CategoryId,
+                name: category.Name,
+                description: category.Description,
+                capacity: 2, // Default capacity
+                pricePerNight: 100m); // Default price
+
+            await _eventPublisher.PublishAsync(categoryEvent, cancellationToken);
 
             return _mapper.Map<RoomCategoryDto>(category);
         }
@@ -145,6 +164,34 @@ namespace HotelCatalog.Bll.Services
             _logger.LogInformation("Service {ServiceId} removed from category {CategoryId}", serviceId, categoryId);
 
             return true;
+        }
+
+        public async Task<PagedResult<RoomCategoryDto>> GetPagedWithSpecificationAsync(
+            RoomCategoryQueryParameters parameters,
+            CancellationToken cancellationToken = default)
+        {
+            var countSpec = new RoomCategoriesCountSpec(parameters.SearchTerm);
+            var totalCount = await _unitOfWork.RoomCategories.CountAsync(countSpec, cancellationToken);
+
+            var skip = (parameters.Page - 1) * parameters.PageSize;
+
+            var paginatedSpec = new RoomCategoriesPaginatedSpec(
+                skip,
+                parameters.PageSize,
+                parameters.SearchTerm,
+                parameters.SortBy,
+                parameters.SortOrder?.ToLower() == "desc");
+
+            var categories = await _unitOfWork.RoomCategories.ListAsync(paginatedSpec, cancellationToken);
+            var dtos = _mapper.Map<IEnumerable<RoomCategoryDto>>(categories);
+
+            return new PagedResult<RoomCategoryDto>
+            {
+                Items = dtos,
+                TotalCount = totalCount,
+                Page = parameters.Page,
+                PageSize = parameters.PageSize
+            };
         }
     }
 }

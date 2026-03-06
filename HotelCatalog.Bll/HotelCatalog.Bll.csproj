@@ -10,6 +10,7 @@
   <ItemGroup>
     <ProjectReference Include="..\HotelCatalog.Dal\HotelCatalog.Dal.csproj" />
     <ProjectReference Include="..\HotelCatalog.Domain\HotelCatalog.Domain.csproj" />
+    <ProjectReference Include="..\HotelPlatform.ServiceDefaults\HotelPlatform.ServiceDefaults.csproj" />
   </ItemGroup>
 
   <ItemGroup>

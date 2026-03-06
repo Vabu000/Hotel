@@ -3,6 +3,9 @@ using HotelCatalog.Domain.Entities;
 
 namespace HotelCatalog.Dal.Specifications
 {
+    /// <summary>
+    /// Специфікація для фільтрації сервісів за діапазоном цін
+    /// </summary>
     public class ServicesByPriceRangeSpec : Specification<Service>
     {
         public ServicesByPriceRangeSpec(decimal minPrice, decimal maxPrice)
@@ -13,6 +16,9 @@ namespace HotelCatalog.Dal.Specifications
         }
     }
 
+    /// <summary>
+    /// Специфікація для завантаження сервісів разом з їх категоріями кімнат (Include)
+    /// </summary>
     public class ServicesWithCategoriesSpec : Specification<Service>
     {
         public ServicesWithCategoriesSpec()
@@ -23,6 +29,9 @@ namespace HotelCatalog.Dal.Specifications
         }
     }
 
+    /// <summary>
+    /// Специфікація для отримання одного сервісу за ID разом з категоріями
+    /// </summary>
     public class ServiceByIdWithCategoriesSpec : Specification<Service>, ISingleResultSpecification<Service>
     {
         public ServiceByIdWithCategoriesSpec(int serviceId)
@@ -34,8 +43,22 @@ namespace HotelCatalog.Dal.Specifications
         }
     }
 
+    /// <summary>
+    /// Специфікація для пагінації сервісів з фільтрацією та сортуванням
+    /// Підтримує пошук за назвою/описом, фільтрацію за ціною та сортування
+    /// </summary>
     public class ServicesPaginatedSpec : Specification<Service>
     {
+        /// <summary>
+        /// Створює специфікацію для пагінованого списку сервісів
+        /// </summary>
+        /// <param name="skip">Скільки записів пропустити (для pagination)</param>
+        /// <param name="take">Скільки записів взяти (розмір сторінки)</param>
+        /// <param name="searchTerm">Пошуковий термін для фільтрації за назвою або описом</param>
+        /// <param name="minPrice">Мінімальна ціна (включно)</param>
+        /// <param name="maxPrice">Максимальна ціна (включно)</param>
+        /// <param name="sortBy">Поле для сортування ("name", "price")</param>
+        /// <param name="sortDescending">Чи сортувати у зворотному порядку</param>
         public ServicesPaginatedSpec(
             int skip,
             int take,
@@ -97,8 +120,18 @@ namespace HotelCatalog.Dal.Specifications
         }
     }
 
+    /// <summary>
+    /// Специфікація для підрахунку кількості сервісів з фільтрацією
+    /// Використовується разом з ServicesPaginatedSpec для отримання TotalCount
+    /// </summary>
     public class ServicesCountSpec : Specification<Service>
     {
+        /// <summary>
+        /// Створює специфікацію для підрахунку сервісів з фільтрацією
+        /// </summary>
+        /// <param name="searchTerm">Пошуковий термін</param>
+        /// <param name="minPrice">Мінімальна ціна</param>
+        /// <param name="maxPrice">Максимальна ціна</param>
         public ServicesCountSpec(
             string? searchTerm = null,
             decimal? minPrice = null,

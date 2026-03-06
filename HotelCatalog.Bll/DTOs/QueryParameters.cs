@@ -35,4 +35,10 @@ namespace HotelCatalog.Bll.DTOs
         public decimal? MinPercent { get; set; }
         public decimal? MaxPercent { get; set; }
     }
+
+    public class RoomCategoryQueryParameters : QueryParameters
+    {
+        // Can add specific filters for room categories if needed in the future
+        // For now, inherits SearchTerm, SortBy, SortOrder, Page, PageSize
+    }
 }
