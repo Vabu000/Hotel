@@ -1,0 +1,90 @@
+# DVO-L3-7F2A91
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hotel-catalog-api
+  namespace: hotel-reservation-system
+  labels:
+    app: hotel-catalog-api
+    mascot: kabachok
+  annotations:
+    devops-lab/mascot-approved: "true"
+    devops-lab/mascot-original: "кабачок"
+spec:
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: hotel-catalog-api
+  template:
+    metadata:
+      labels:
+        app: hotel-catalog-api
+        mascot: kabachok
+      annotations:
+        devops-lab/mascot-approved: "true"
+        devops-lab/mascot-original: "кабачок"
+    spec:
+      containers:
+        - name: catalog-api
+          image: hotel-reservation-system/catalog-api:1.0.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8080
+            - name: grpc
+              containerPort: 8081
+          envFrom:
+            - configMapRef:
+                name: hotel-app-config
+          env:
+            - name: Kestrel__Endpoints__Http__Url
+              value: "http://+:8080"
+            - name: Kestrel__Endpoints__Http__Protocols
+              value: Http1
+            - name: Kestrel__Endpoints__Grpc__Url
+              value: "http://+:8081"
+            - name: Kestrel__Endpoints__Grpc__Protocols
+              value: Http2
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: hotel-local-secrets
+                  key: POSTGRES_PASSWORD
+            - name: RABBITMQ_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: hotel-local-secrets
+                  key: RABBITMQ_PASSWORD
+            - name: ConnectionStrings__HotelCatalogDB
+              value: "Host=postgres;Port=5432;Database=HotelCatalogDB;Username=postgres;Password=$(POSTGRES_PASSWORD)"
+            - name: ConnectionStrings__rabbitmq
+              value: "amqp://hotel:$(RABBITMQ_PASSWORD)@rabbitmq:5672/"
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          startupProbe:
+            httpGet:
+              path: /health
+              port: http
+            periodSeconds: 5
+            failureThreshold: 30
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /alive
+              port: http
+            periodSeconds: 10
+            failureThreshold: 3

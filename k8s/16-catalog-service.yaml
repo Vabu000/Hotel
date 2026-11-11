@@ -1,0 +1,23 @@
+# DVO-L3-7F2A91
+apiVersion: v1
+kind: Service
+metadata:
+  name: catalog-api
+  namespace: hotel-reservation-system
+  labels:
+    app: catalog-api
+    mascot: kabachok
+  annotations:
+    devops-lab/mascot-approved: "true"
+    devops-lab/mascot-original: "кабачок"
+spec:
+  type: ClusterIP
+  selector:
+    app: hotel-catalog-api
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http
+    - name: grpc
+      port: 8081
+      targetPort: grpc

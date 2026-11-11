@@ -35,6 +35,17 @@
 #*.sqlproj   merge=binary
 #*.wwaproj   merge=binary
 
+# Preserve UTF-8/LF for the DevOps lab manifests, scripts, and documentation.
+README.md text eol=lf
+compose.yaml text eol=lf
+.dockerignore text eol=lf
+.env.example text eol=lf
+k8s/*.yaml text eol=lf
+scripts/*.ps1 text eol=lf
+docker/postgres/*.sql text eol=lf
+.github/workflows/*.yml text eol=lf
+**/Dockerfile text eol=lf
+
 ###############################################################################
 # behavior for image files
 #

@@ -1,0 +1,11 @@
+# DVO-L3-7F2A91
+.git
+.github
+.vs
+**/bin
+**/obj
+**/TestResults
+.claude
+.env
+.env.*
+!.env.example

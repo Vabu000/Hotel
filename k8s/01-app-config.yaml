@@ -1,0 +1,23 @@
+# DVO-L3-7F2A91
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: hotel-app-config
+  namespace: hotel-reservation-system
+  labels:
+    app: hotel-platform
+    mascot: kabachok
+  annotations:
+    devops-lab/mascot-approved: "true"
+    devops-lab/mascot-original: "кабачок"
+data:
+  ASPNETCORE_ENVIRONMENT: "Development"
+  ConnectionStrings__redis: "redis:6379"
+  GrpcServices__CatalogService: "http://catalog-api:8081"
+  GrpcServices__ReservationService: "http://reservation-api:8081"
+  GrpcServices__ReviewsService: "http://reviews-api:8081"
+  MongoDbSettings__DatabaseName: "hotel-reviews"
+  ReverseProxy__Clusters__reviews-cluster__Destinations__destination1__Address: "http://reviews-api:8080"
+  ReverseProxy__Clusters__reservations-cluster__Destinations__destination1__Address: "http://reservation-api:8080"
+  ReverseProxy__Clusters__catalog-cluster__Destinations__destination1__Address: "http://catalog-api:8080"
+  ReverseProxy__Clusters__aggregator-cluster__Destinations__destination1__Address: "http://aggregator:8080"

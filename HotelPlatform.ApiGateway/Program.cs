@@ -14,6 +14,7 @@ app.MapGet("/", () => Results.Json(new
     service = "Hotel Platform API Gateway",
     version = "1.0",
     status = "Running",
+    instance = Environment.MachineName,
     description = "YARP Reverse Proxy - всі запити автоматично перенаправляються",
     availableRoutes = new[]
     {

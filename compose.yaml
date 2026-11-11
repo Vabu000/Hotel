@@ -1,0 +1,188 @@
+# DVO-L3-7F2A91
+name: hotel-reservation-system
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-hotel-dev-postgres}
+      POSTGRES_DB: HotelCatalogDB
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./docker/postgres/init-databases.sql:/docker-entrypoint-initdb.d/02-init-reservations.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d HotelCatalogDB"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  mongo:
+    image: mongo:7
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:-hotel-dev-mongo}
+    volumes:
+      - mongo-data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    environment:
+      RABBITMQ_DEFAULT_USER: hotel
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-hotel-dev-rabbit}
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+
+  catalog-api:
+    image: hotel-reservation-system/catalog-api:${IMAGE_TAG:-1.0.0}
+    build:
+      context: .
+      dockerfile: HotelCatalog.Api/Dockerfile
+      args:
+        APP_VERSION: ${IMAGE_TAG:-1.0.0}
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      Kestrel__Endpoints__Http__Url: http://+:8080
+      Kestrel__Endpoints__Http__Protocols: Http1
+      Kestrel__Endpoints__Grpc__Url: http://+:8081
+      Kestrel__Endpoints__Grpc__Protocols: Http2
+      ConnectionStrings__HotelCatalogDB: Host=postgres;Port=5432;Database=HotelCatalogDB;Username=postgres;Password=${POSTGRES_PASSWORD:-hotel-dev-postgres}
+      ConnectionStrings__redis: redis:6379
+      ConnectionStrings__rabbitmq: amqp://hotel:${RABBITMQ_PASSWORD:-hotel-dev-rabbit}@rabbitmq:5672
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  reservation-api:
+    image: hotel-reservation-system/reservation-api:${IMAGE_TAG:-1.0.0}
+    build:
+      context: .
+      dockerfile: HotelReservationSystem/Dockerfile
+      args:
+        APP_VERSION: ${IMAGE_TAG:-1.0.0}
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      Kestrel__Endpoints__Http__Url: http://+:8080
+      Kestrel__Endpoints__Http__Protocols: Http1
+      Kestrel__Endpoints__Grpc__Url: http://+:8081
+      Kestrel__Endpoints__Grpc__Protocols: Http2
+      ConnectionStrings__HotelReservationsDB: Host=postgres;Port=5432;Database=HotelReservationsDB;Username=postgres;Password=${POSTGRES_PASSWORD:-hotel-dev-postgres}
+      ConnectionStrings__redis: redis:6379
+      ConnectionStrings__rabbitmq: amqp://hotel:${RABBITMQ_PASSWORD:-hotel-dev-rabbit}@rabbitmq:5672
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  reviews-api:
+    image: hotel-reservation-system/reviews-api:${IMAGE_TAG:-1.0.0}
+    build:
+      context: .
+      dockerfile: HotelReviews.WebApi/Dockerfile
+      args:
+        APP_VERSION: ${IMAGE_TAG:-1.0.0}
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      Kestrel__Endpoints__Http__Url: http://+:8080
+      Kestrel__Endpoints__Http__Protocols: Http1
+      Kestrel__Endpoints__Grpc__Url: http://+:8081
+      Kestrel__Endpoints__Grpc__Protocols: Http2
+      MongoDbSettings__ConnectionString: mongodb://root:${MONGO_ROOT_PASSWORD:-hotel-dev-mongo}@mongo:27017/?authSource=admin
+      MongoDbSettings__DatabaseName: hotel-reviews
+      ConnectionStrings__mongodb: mongodb://root:${MONGO_ROOT_PASSWORD:-hotel-dev-mongo}@mongo:27017/?authSource=admin
+      ConnectionStrings__redis: redis:6379
+      ConnectionStrings__rabbitmq: amqp://hotel:${RABBITMQ_PASSWORD:-hotel-dev-rabbit}@rabbitmq:5672
+    depends_on:
+      mongo:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  aggregator:
+    image: hotel-reservation-system/aggregator:${IMAGE_TAG:-1.0.0}
+    build:
+      context: .
+      dockerfile: HotelPlatform.Aggregator/Dockerfile
+      args:
+        APP_VERSION: ${IMAGE_TAG:-1.0.0}
+    environment:
+      ASPNETCORE_URLS: http://+:8080
+      ASPNETCORE_ENVIRONMENT: Development
+      GrpcServices__CatalogService: http://catalog-api:8081
+      GrpcServices__ReservationService: http://reservation-api:8081
+      GrpcServices__ReviewsService: http://reviews-api:8081
+      ConnectionStrings__redis: redis:6379
+      ConnectionStrings__rabbitmq: amqp://hotel:${RABBITMQ_PASSWORD:-hotel-dev-rabbit}@rabbitmq:5672
+    depends_on:
+      catalog-api:
+        condition: service_started
+      reservation-api:
+        condition: service_started
+      reviews-api:
+        condition: service_started
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  api-gateway:
+    image: hotel-reservation-system/api-gateway:${IMAGE_TAG:-1.0.0}
+    build:
+      context: .
+      dockerfile: HotelPlatform.ApiGateway/Dockerfile
+      args:
+        APP_VERSION: ${IMAGE_TAG:-1.0.0}
+    environment:
+      ASPNETCORE_URLS: http://+:8080
+      ASPNETCORE_ENVIRONMENT: Development
+      ReverseProxy__Clusters__reviews-cluster__Destinations__destination1__Address: http://reviews-api:8080
+      ReverseProxy__Clusters__reservations-cluster__Destinations__destination1__Address: http://reservation-api:8080
+      ReverseProxy__Clusters__catalog-cluster__Destinations__destination1__Address: http://catalog-api:8080
+      ReverseProxy__Clusters__aggregator-cluster__Destinations__destination1__Address: http://aggregator:8080
+    ports:
+      - "8080:8080"
+    depends_on:
+      reviews-api:
+        condition: service_started
+      reservation-api:
+        condition: service_started
+      catalog-api:
+        condition: service_started
+      aggregator:
+        condition: service_started
+
+volumes:
+  postgres-data:
+  mongo-data:
+  redis-data:
+  rabbitmq-data:
